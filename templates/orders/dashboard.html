@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Личный кабинет | Кристалл</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-4xl mx-auto py-8">
+<h1 class="text-2xl font-bold mb-6">Здравствуйте, {{ client.full_name }}!</h1>
+
+  <div class="mt-8 flex gap-4">
+    <a href="tel:+79998887766" class="bg-green-500 text-white px-4 py-2 rounded">📞 Позвонить</a>
+    <a href="https://t.me/kristallclean" class="bg-blue-500 text-white px-4 py-2 rounded">💬 Telegram</a>
+      <a href="https://wa.me/79998887766" class="bg-green-600 text-white px-4 py-2 rounded">💬 WhatsApp</a>
+    <a href="{% url 'faq' %}" class="text-blue-700 underline ml-auto">Часто задаваемые вопросы →</a>
+  </div>
+
+    <h2 class="text-xl font-semibold mb-4">🧺 Ваши заказы:</h2>
+    <ul class="space-y-4">
+      {% for order in orders %}
+        <li class="p-4 bg-white rounded shadow">
+          <div><strong>ID заказа:</strong> {{ order.id }}</div>
+          <div><strong>Дата создания:</strong> {{ order.created_at|date:"H:i d.m.Y" }}</div>
+<div><strong>Дата доставки:</strong> {{ order.delivery_date|date:"d.m.Y" }}</div>
+
+          <div><strong>Статус:</strong> {{ order.status }}</div>
+          <div><strong>Сумма:</strong> {{ order.total_price }} ₽</div>
+        </li>
+      {% empty %}
+        <li>Заказов пока нет.</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <h2 class="text-xl font-semibold mt-8 mb-2">🔔 Уведомления:</h2>
+  <ul class="space-y-2">
+    {% for note in client.notifications.all %}
+      <li class="bg-yellow-100 p-2 rounded">{{ note.created_at|date:"d.m.Y H:i" }} — {{ note.message }}</li>
+    {% empty %}
+      <li>Нет уведомлений.</li>
+    {% endfor %}
+  </ul>
+
+
+</body>
+</html>

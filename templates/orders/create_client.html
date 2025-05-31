@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Создание клиента</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-50 p-8 max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold mb-6">👤 Создание нового клиента</h1>
+
+<form method="post" class="bg-white p-6 rounded shadow space-y-6">
+  {% csrf_token %}
+  {% for field in form %}
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1" for="{{ field.id_for_label }}">
+        {{ field.label }}
+      </label>
+      {{ field }}
+      {% if field.errors %}
+        <p class="text-red-600 text-sm">{{ field.errors|striptags }}</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+    ➕ Создать клиента
+  </button>
+</form>
+<div class="mt-12 pt-6 border-t border-gray-300 text-center">
+  <a href="{% url 'operator_dashboard' %}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded shadow">
+    ← Назад в панель оператора
+  </a>
+</div>
+
+
+</body>
+</html>

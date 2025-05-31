@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Вход | Кристалл</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-100 p-8 max-w-md mx-auto mt-10">
+  <h1 class="text-2xl font-bold mb-6 text-center">🔐 Вход для операторов</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="w-full mt-4 bg-blue-600 text-white py-2 rounded">Войти</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Новый заказ | Кристалл</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900 p-8">
+
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">➕ Создание заявки для курьера</h1>
+
+    <form method="post" class="bg-white p-6 rounded shadow space-y-6">
+      {% csrf_token %}
+
+      <div class="space-y-4">
+        <h2 class="text-xl font-semibold">Данные заказа</h2>
+        <div>
+  {{ form.client_phone.label_tag }}
+  {{ form.client_phone }}
+</div>
+
+<div id="client-address-display" class="hidden">
+  <label class="font-semibold">Адрес клиента:</label>
+  <div class="flex items-center gap-2">
+    <span id="client-address-text" class="text-gray-800 bg-gray-100 px-4 py-2 rounded"></span>
+    <button type="button" onclick="toggleAddressEdit()" class="text-blue-600 underline">✏️ Изменить</button>
+  </div>
+</div>
+
+<div id="client-address-edit" class="hidden">
+  {{ form.client_address.label_tag }}
+  {{ form.client_address }}
+</div>
+<div>
+  {{ form.delivery_date.label_tag }}
+  {{ form.delivery_date }}
+</div>
+
+<div>
+  {{ form.status.label_tag }}
+  {{ form.status }}
+</div>
+
+        <ul id="clientSuggestions" class="bg-white border rounded mt-1 hidden absolute z-10 max-h-48 overflow-y-auto w-full shadow"></ul>
+
+      </div>
+
+
+
+
+      <button class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+        ✅ Отправить заявку
+      </button>
+      {% if rug_forms.errors %}
+  <div class="bg-red-100 text-red-800 p-4 mb-4 rounded">
+    <strong>Ошибки ковров:</strong>
+    <ul class="list-disc pl-5">
+      {% for form in rug_forms %}
+        {% for error in form.errors.values %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+    </form>
+  </div>
+<script>
+function toggleAddressEdit() {
+  document.getElementById('client-address-display').classList.add('hidden');
+  document.getElementById('client-address-edit').classList.remove('hidden');
+}
+
+function fetchAddress(phone) {
+  fetch(`/api/get_client_address/?phone=${encodeURIComponent(phone)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.address) {
+        document.getElementById('client-address-text').textContent = data.address;
+        document.getElementById('client-address-display').classList.remove('hidden');
+        const addrInput = document.getElementById('id_client_address');
+        if (addrInput) addrInput.value = data.address;
+      }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById('id_client_phone');
+  const suggestions = document.getElementById('clientSuggestions');
+
+  input.addEventListener('input', async () => {
+    const query = input.value.trim();
+    if (query.length < 3) {
+      suggestions.innerHTML = '';
+      suggestions.classList.add('hidden');
+      return;
+    }
+
+    const res = await fetch(`/api/client-search/?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+
+    suggestions.innerHTML = '';
+    data.forEach(client => {
+      const li = document.createElement('li');
+      li.textContent = client.label;
+      li.className = 'px-3 py-2 hover:bg-blue-100 cursor-pointer';
+      li.addEventListener('click', () => {
+        input.value = client.phone;
+        suggestions.innerHTML = '';
+        suggestions.classList.add('hidden');
+        fetchAddress(client.phone); // 🔥 сразу подгружаем адрес!
+      });
+      suggestions.appendChild(li);
+    });
+
+    suggestions.classList.toggle('hidden', data.length === 0);
+  });
+
+  input.addEventListener('blur', () => {
+    if (input.value.trim().length >= 3) {
+      fetchAddress(input.value);
+    }
+  });
+});
+</script>
+
+<div class="mt-12 pt-6 border-t border-gray-300 text-center">
+  <a href="{% url 'operator_dashboard' %}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded shadow">
+    ← Назад в панель оператора
+  </a>
+</div>
+
+</body>
+</html>
