@@ -87,7 +87,8 @@ class OrderForm(forms.ModelForm):
 class RugForm(forms.ModelForm):
     class Meta:
         model = Rug
-        fields = ['rug_type', 'width', 'length', 'condition_before']
+        exclude = ['order']
+        fields = ['order', 'width', 'length']
         labels = {
             'rug_type': 'Тип ковра',
             'width': 'Ширина (м)',

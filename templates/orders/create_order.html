@@ -37,6 +37,10 @@
   {{ form.delivery_date.label_tag }}
   {{ form.delivery_date }}
 </div>
+<div id="courier-load-panel" class="my-4 p-4 bg-white border rounded shadow">
+  <h3 class="font-bold mb-2 text-lg">Загрузка курьеров:</h3>
+  <div id="courier-load-content">Выберите дату...</div>
+</div>
 
 <div>
   {{ form.status.label_tag }}
@@ -47,6 +51,10 @@
 
       </div>
 
+<div class="mb-4">
+  <label for="id_courier" class="block text-sm font-medium text-gray-700">Курьер</label>
+  {{ form.courier }}
+</div>
 
 
 
@@ -111,7 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
         input.value = client.phone;
         suggestions.innerHTML = '';
         suggestions.classList.add('hidden');
-        fetchAddress(client.phone); // 🔥 сразу подгружаем адрес!
+        fetchAddress(client.phone);
       });
       suggestions.appendChild(li);
     });
@@ -124,8 +132,44 @@ document.addEventListener("DOMContentLoaded", function () {
       fetchAddress(input.value);
     }
   });
+
+  const deliveryInput = document.getElementById("id_delivery_date");
+  const contentDiv = document.getElementById("courier-load-content");
+
+  if (deliveryInput && contentDiv) {
+    deliveryInput.addEventListener("change", function () {
+      let date = this.value;
+      if (!date) return;
+
+      const parts = date.split(".");
+      if (parts.length === 3) {
+        date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+
+      fetch(`/api/courier-load/?date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data || Object.keys(data).length === 0) {
+            contentDiv.innerHTML = "Нет данных по курьерам.";
+            return;
+          }
+
+          contentDiv.innerHTML = "";
+          Object.entries(data).forEach(([id, item]) => {
+            const div = document.createElement("div");
+            div.innerHTML = `<strong>${item.full_name}</strong>: ${item.load} заказов`;
+            contentDiv.appendChild(div);
+          });
+        })
+        .catch(() => {
+          contentDiv.innerHTML = "Ошибка загрузки.";
+        });
+    });
+  }
 });
 </script>
+
+
 
 <div class="mt-12 pt-6 border-t border-gray-300 text-center">
   <a href="{% url 'operator_dashboard' %}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded shadow">

@@ -9,7 +9,15 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Rug)
 class RugAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'rug_type', 'condition_before')
+    list_display = ('id', 'order', 'width', 'length', 'calculated_price')
+    readonly_fields = ('calculated_price',)
+    exclude = ('rug_type', 'condition_before')
+
+    def calculated_price(self, obj):
+        if obj.width and obj.length:
+            return f"{obj.width * obj.length * 350:.2f} ₽"
+        return "—"
+    calculated_price.short_description = "Цена (площадь × 350 ₽/м²)"
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):

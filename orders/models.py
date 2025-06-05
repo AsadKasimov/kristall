@@ -54,13 +54,22 @@ class Order(models.Model):
 
 class Rug(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='rugs')
-    rug_type = models.CharField(max_length=100)
     width = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     length = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    condition_before = models.TextField(blank=True)
 
     def __str__(self):
         return f"Ковер #{self.id} для {self.order}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Пересчёт total_price заказа
+        total = 0
+        for rug in self.order.rugs.all():
+            if rug.width and rug.length:
+                total += float(rug.width) * float(rug.length) * 350
+        self.order.total_price = total
+        self.order.save()
+
 
 class Employee(models.Model):
     full_name = models.CharField(max_length=100)
@@ -77,12 +86,24 @@ class OrderStaff(models.Model):
     def __str__(self):
         return f"{self.employee} на заказ {self.order}"
 
+import uuid
+from django.db import models
+
 class AccessToken(models.Model):
-    client = models.OneToOneField('accounts.CustomUser', on_delete=models.CASCADE)
-    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    client = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'role': 'CLIENT'})
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    short_token = models.CharField(max_length=16, unique=True, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.short_token:
+            self.short_token = str(self.token).replace('-', '')[:8]
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Token for {self.client.username}"
+        return self.short_token
+
+
 
 class Notification(models.Model):
     user = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE, related_name='notifications')

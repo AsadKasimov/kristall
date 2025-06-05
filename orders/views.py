@@ -228,9 +228,6 @@ class OrderEditForm(forms.ModelForm):
         self.fields['return_date'].widget.attrs['disabled'] = True
 
 
-
-
-
 @login_required
 @only_operators
 def edit_order(request, order_id):
@@ -284,7 +281,8 @@ def edit_order(request, order_id):
 
             return redirect('operator_order_list')
     else:
-        initial_data = list(existing_rugs.values('rug_type', 'width', 'length', 'condition_before'))
+        initial_data = list(existing_rugs.values('width', 'length'))
+
         rug_forms = RugFormSet(initial=initial_data)
         empty_rug_form = rug_forms.empty_form
         form = OrderEditForm(instance=order)
@@ -326,17 +324,21 @@ def get_client_address(request):
     except CustomUser.DoesNotExist:
         return JsonResponse({"address": ""})
 
+
 def short_dashboard_redirect(request, short_token):
     token = get_object_or_404(AccessToken, token__startswith=short_token)
     return redirect(f'/dashboard/{token.token}/')
 
+
 from django.shortcuts import redirect, get_object_or_404
 from .models import AccessToken
+
 
 def redirect_by_token(request):
     short_token = request.GET.get("token")
     token_obj = get_object_or_404(AccessToken, token__startswith=short_token)
     return redirect("client_dashboard", token=token_obj.token)
+
 
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
@@ -348,13 +350,16 @@ def courier_required(view_func):
         if not request.user.is_authenticated or request.user.role != 'COURIER':
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
+
     return wrapper
+
 
 @login_required
 @courier_required
 def courier_dashboard(request):
     orders = Order.objects.filter(courier=request.user).order_by('-created_at')
     return render(request, 'courier/dashboard.html', {'orders': orders})
+
 
 @require_POST
 @login_required
@@ -364,6 +369,7 @@ def mark_picked_up(request, order_id):
     order.status = 'Оценка'
     order.save()
     return redirect('courier_dashboard')
+
 
 @require_POST
 @login_required
@@ -375,3 +381,31 @@ def mark_delivered(request, order_id):
     order.save()
     return redirect('courier_dashboard')
 
+
+# views.py
+from django.http import JsonResponse
+from .models import Order, CustomUser
+from django.views.decorators.http import require_GET
+from django.utils.dateparse import parse_date
+
+@require_GET
+def get_courier_load(request):
+    date_str = request.GET.get("date")
+    if not date_str:
+        return JsonResponse({"error": "date is required"}, status=400)
+
+    date = parse_date(date_str)
+    if not date:
+        return JsonResponse({"error": "invalid date"}, status=400)
+
+    couriers = CustomUser.objects.filter(role='COURIER')
+    data = {}
+
+    for courier in couriers:
+        count = Order.objects.filter(courier=courier, delivery_date=date).count()
+        data[courier.id] = {
+            "full_name": courier.full_name or courier.username,
+            "load": count
+        }
+
+    return JsonResponse(data)

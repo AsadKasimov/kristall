@@ -31,6 +31,7 @@ urlpatterns = [
     path('courier/mark-picked-up/<int:order_id>/', views.mark_picked_up, name='mark_picked_up'),
     path('courier/mark-delivered/<int:order_id>/', views.mark_delivered, name='mark_delivered'),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
+    path("api/courier-load/", views.get_courier_load, name="courier_load"),
 ]
 
 

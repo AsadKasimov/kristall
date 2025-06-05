@@ -22,9 +22,9 @@ class CustomUserAdmin(UserAdmin):
     model = CustomUser
     add_form = CustomUserCreationForm
 
-    list_display = ("username", "role", "email", "phone")
+    list_display = ("full_name", "username", "role", "email", "phone")  # 👈 добавили full_name
     fieldsets = UserAdmin.fieldsets + (
-        (None, {"fields": ("role", "phone", "address")}),
+        (None, {"fields": ("role", "phone", "address", "full_name")}),  # 👈 добавили full_name
     )
     add_fieldsets = (
         (None, {
@@ -33,3 +33,4 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
     actions = [set_operator]
+
