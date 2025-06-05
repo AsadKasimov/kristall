@@ -34,7 +34,8 @@
   </div>
   <h2 class="text-xl font-semibold mt-8 mb-2">🔔 Уведомления:</h2>
   <ul class="space-y-2">
-    {% for note in client.notifications.all %}
+    {% for note in notifications %}
+
       <li class="bg-yellow-100 p-2 rounded">{{ note.created_at|date:"d.m.Y H:i" }} — {{ note.message }}</li>
     {% empty %}
       <li>Нет уведомлений.</li>

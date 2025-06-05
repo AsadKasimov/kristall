@@ -6,7 +6,8 @@ class CustomUser(AbstractUser):
     ROLE_CHOICES = [
         ('CLIENT', 'Клиент'),
         ('OPERATOR', 'Оператор'),
-        ('EVALUATOR', 'Оценщик')
+        ('EVALUATOR', 'Оценщик'),
+        ('COURIER', 'Курьер'),
     ]
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)

@@ -1,41 +1,35 @@
-from django.shortcuts import render, get_object_or_404
 from django import forms
-from django.forms import inlineformset_factory
-from accounts.models import CustomUser
-from .models import AccessToken, Order, Rug, Notification
-from django.shortcuts import redirect
-from .models import AccessToken, OrderStaff
-from .forms import OrderForm, RugForm, AssignEmployeeForm
-from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+
+from .models import Order, Rug, Notification
+from .models import OrderStaff
+from .forms import OrderForm, AssignEmployeeForm
 from django.forms import modelformset_factory
 from django.contrib.auth.decorators import login_required
-from django.db.models import Prefetch
 from django.http import HttpResponse
-from .models import OrderLog
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import redirect, render
 from .forms import ClientCreateForm
-from accounts.models import CustomUser
 from .models import AccessToken
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from accounts.models import CustomUser
 from django.db.models import Q
-from django.forms import formset_factory
-from django.forms.formsets import DELETION_FIELD_NAME
-from django.utils.timezone import now
-
 from django.http import JsonResponse
 from accounts.models import CustomUser
+from django.forms import formset_factory
+from .forms import RugForm
+from django.utils.timezone import now, localtime
+from django.utils.timezone import localdate
+
 
 def client_dashboard(request, token):
     access_token = get_object_or_404(AccessToken, token=token)
     client = access_token.client
     orders = client.orders.all().order_by('-created_at')
+    notifications = client.notifications.order_by('-created_at')
 
     return render(request, 'orders/dashboard.html', {
         'client': client,
         'orders': orders,
+        'notifications': notifications,
     })
 
 
@@ -81,7 +75,7 @@ def create_order(request):
 def order_success(request, order_id):
     order = Order.objects.get(id=order_id)
     token = AccessToken.objects.get(client=order.client)
-    url = request.build_absolute_uri(f"/dashboard/{token.token}/")
+    url = request.build_absolute_uri(f"/d/{token.short_token}/")
     return HttpResponse(f"✅ Заказ создан! Ссылка для клиента: <a href='{url}'>{url}</a>")
 
 
@@ -89,9 +83,6 @@ def order_success(request, order_id):
 def operator_order_list(request):
     orders = Order.objects.select_related('client').prefetch_related('rugs').order_by('-created_at')
     return render(request, 'orders/operator_list.html', {'orders': orders})
-
-
-
 
 
 @login_required
@@ -105,7 +96,10 @@ def operator_order_list(request):
         orders = orders.filter(status=status_filter)
 
     if search:
-        orders = orders.filter(client__username__icontains=search)
+        orders = orders.filter(
+            Q(client__username__icontains=search) |
+            Q(client__phone__icontains=search)
+        )
 
     statuses = Order.objects.values_list('status', flat=True).distinct()
 
@@ -143,6 +137,7 @@ from django.shortcuts import render
 def faq_view(request):
     return render(request, 'orders/faq.html')
 
+
 @login_required
 @only_operators
 def operator_dashboard(request):
@@ -170,9 +165,6 @@ def create_order_with_client(request, client_id):
     })
 
 
-
-
-
 @login_required
 @only_operators
 def create_client_view(request):
@@ -185,6 +177,7 @@ def create_client_view(request):
     else:
         form = ClientCreateForm()
     return render(request, 'orders/create_client.html', {'form': form})
+
 
 @login_required
 @only_operators
@@ -199,6 +192,7 @@ def create_order(request):
                 form.add_error('client_phone', 'Клиент с таким телефоном не найден.')
             else:
                 order = form.save(commit=False)
+                order.status = 'Новый'
                 order.client = client
                 order.save()
 
@@ -213,6 +207,7 @@ def create_order(request):
         form = OrderForm(initial={'status': 'Новый'})
 
     return render(request, 'orders/create_order.html', {'form': form})
+
 
 class OrderEditForm(forms.ModelForm):
     class Meta:
@@ -229,14 +224,12 @@ class OrderEditForm(forms.ModelForm):
             field.widget.attrs.update({
                 'class': 'w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500'
             })
+        self.fields['return_date'].widget.attrs['readonly'] = True
+        self.fields['return_date'].widget.attrs['disabled'] = True
 
 
 
 
-from django.forms import formset_factory
-from .forms import RugForm
-from django.utils.timezone import now, localtime
-from datetime import timedelta
 
 @login_required
 @only_operators
@@ -258,11 +251,14 @@ def edit_order(request, order_id):
             valid_forms = [
                 f for f in rug_forms.forms
                 if not f.cleaned_data.get('DELETE') and (
-                    f.cleaned_data.get('rug_type') or f.cleaned_data.get('width') or f.cleaned_data.get('length')
+                        f.cleaned_data.get('rug_type') or f.cleaned_data.get('width') or f.cleaned_data.get('length')
                 )
             ]
 
             order.rug_count = len(valid_forms)
+            if order.status == "Доставлен клиенту":
+                order.return_date = localdate()
+
             order.save()
 
             for rug_form in valid_forms:
@@ -301,11 +297,6 @@ def edit_order(request, order_id):
     })
 
 
-
-
-
-
-
 @login_required
 def client_search_view(request):
     query = request.GET.get('q', '')
@@ -334,3 +325,53 @@ def get_client_address(request):
         return JsonResponse({"address": client.address})
     except CustomUser.DoesNotExist:
         return JsonResponse({"address": ""})
+
+def short_dashboard_redirect(request, short_token):
+    token = get_object_or_404(AccessToken, token__startswith=short_token)
+    return redirect(f'/dashboard/{token.token}/')
+
+from django.shortcuts import redirect, get_object_or_404
+from .models import AccessToken
+
+def redirect_by_token(request):
+    short_token = request.GET.get("token")
+    token_obj = get_object_or_404(AccessToken, token__startswith=short_token)
+    return redirect("client_dashboard", token=token_obj.token)
+
+from django.core.exceptions import PermissionDenied
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+
+def courier_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated or request.user.role != 'COURIER':
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+@login_required
+@courier_required
+def courier_dashboard(request):
+    orders = Order.objects.filter(courier=request.user).order_by('-created_at')
+    return render(request, 'courier/dashboard.html', {'orders': orders})
+
+@require_POST
+@login_required
+@courier_required
+def mark_picked_up(request, order_id):
+    order = get_object_or_404(Order, id=order_id, courier=request.user, status='Новый')
+    order.status = 'Оценка'
+    order.save()
+    return redirect('courier_dashboard')
+
+@require_POST
+@login_required
+@courier_required
+def mark_delivered(request, order_id):
+    order = get_object_or_404(Order, id=order_id, courier=request.user, status='Готов к возврату')
+    order.status = 'Доставлен клиенту'
+    order.return_date = timezone.localdate()
+    order.save()
+    return redirect('courier_dashboard')
+

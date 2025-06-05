@@ -2,13 +2,10 @@ from django.db import models
 from accounts.models import CustomUser
 import uuid
 
-from django.db import models
-from accounts.models import CustomUser
-
 class Order(models.Model):
     STATUS_CHOICES = [
         ('Новый', 'Новый'),
-        ('Ожидает забор', 'Забрали'),
+        ('Забрали', 'Забрали'),
         ('Оценка', 'Оценка'),
         ('Чистка', 'Чистка'),
         ('Готов к возврату', 'Готов к возврату'),
@@ -35,13 +32,25 @@ class Order(models.Model):
         blank=True,
         verbose_name="Дата доставки"
     )
-
+    return_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Дата возврата"
+    )
     total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     rug_count = models.PositiveIntegerField(default=1, verbose_name="Количество ковров")
+    courier = models.ForeignKey(
+        'accounts.CustomUser',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='courier_orders',
+        limit_choices_to={'role': 'COURIER'},
+        verbose_name='Курьер'
+    )
 
     def __str__(self):
         return f"Заказ #{self.id} — {self.client.full_name or self.client.phone} [{self.status}]"
-
 
 class Rug(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='rugs')
@@ -49,7 +58,6 @@ class Rug(models.Model):
     width = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     length = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     condition_before = models.TextField(blank=True)
-
 
     def __str__(self):
         return f"Ковер #{self.id} для {self.order}"
@@ -68,8 +76,6 @@ class OrderStaff(models.Model):
 
     def __str__(self):
         return f"{self.employee} на заказ {self.order}"
-
-
 
 class AccessToken(models.Model):
     client = models.OneToOneField('accounts.CustomUser', on_delete=models.CASCADE)
@@ -96,3 +102,10 @@ class OrderLog(models.Model):
 
     def __str__(self):
         return f"[{self.created_at}] {self.user}: {self.message}"
+
+class Courier(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, limit_choices_to={'role': 'COURIER'})
+    phone = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.user.full_name or self.user.username}"

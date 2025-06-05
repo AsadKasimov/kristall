@@ -25,7 +25,11 @@ urlpatterns = [
     path('operator/orders/create/<int:client_id>/', create_order_with_client, name='create_order_with_client'),
     path('api/client-search/', client_search_view, name='client_search'),
     path('api/get_client_address/', views.get_client_address, name='get_client_address'),
-
+    path('d/<str:short_token>/', views.short_dashboard_redirect, name='short_dashboard'),
+    path("go/", views.redirect_by_token, name="redirect_by_token"),
+    path('courier/', views.courier_dashboard, name='courier_dashboard'),
+    path('courier/mark-picked-up/<int:order_id>/', views.mark_picked_up, name='mark_picked_up'),
+    path('courier/mark-delivered/<int:order_id>/', views.mark_delivered, name='mark_delivered'),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
 ]
 

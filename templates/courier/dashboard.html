@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Панель Курьера | Кристалл</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900 p-6">
+
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">🚚 Панель Курьера</h1>
+<form action="{% url 'logout' %}" method="post" class="text-right my-4">
+  {% csrf_token %}
+  <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded">
+    🚪 Выйти
+  </button>
+</form>
+
+    <h2 class="text-xl font-semibold text-blue-700 mb-4">📦 Забрать (Новый)</h2>
+    {% for order in orders %}
+      {% if order.status == 'Новый' %}
+        <div class="bg-white p-4 rounded shadow mb-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <div><strong>ID:</strong> {{ order.id }}</div>
+              <div><strong>Клиент:</strong> {{ order.client.full_name }} — {{ order.client.phone }}</div>
+              <div><strong>Адрес:</strong> {{ order.client.address }}</div>
+              <div><strong>Создан:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</div>
+            </div>
+            <form method="post" action="{% url 'mark_picked_up' order.id %}">
+              {% csrf_token %}
+              <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">✅ Забрал</button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    {% empty %}
+      <p>Нет заказов на забор.</p>
+    {% endfor %}
+
+    <h2 class="text-xl font-semibold text-blue-700 mt-10 mb-4">📬 Доставить (Готов к возврату)</h2>
+    {% for order in orders %}
+      {% if order.status == 'Готов к возврату' %}
+        <div class="bg-white p-4 rounded shadow mb-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <div><strong>ID:</strong> {{ order.id }}</div>
+              <div><strong>Клиент:</strong> {{ order.client.full_name }} — {{ order.client.phone }}</div>
+              <div><strong>Адрес:</strong> {{ order.client.address }}</div>
+              <div><strong>Дата доставки:</strong> {{ order.delivery_date|date:"d.m.Y" }}</div>
+            </div>
+            <form method="post" action="{% url 'mark_delivered' order.id %}">
+              {% csrf_token %}
+              <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">📦 Доставил</button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    {% empty %}
+      <p>Нет заказов на доставку.</p>
+    {% endfor %}
+  </div>
+
+</body>
+</html>

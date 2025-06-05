@@ -10,7 +10,8 @@
   <h1 class="text-3xl font-bold mb-6">📋 Заказы клиентов</h1>
 
   <form method="get" class="mb-6 flex flex-wrap gap-4 items-center">
-    <input name="q" placeholder="🔍 Поиск по клиенту..." value="{{ search }}" class="border p-2 rounded w-full sm:w-64" />
+    <input name="q" placeholder="🔍 Поиск по клиенту..." value="{{ search|default_if_none:'' }}"
+ class="border p-2 rounded w-full sm:w-64" />
     <select name="status" class="border p-2 rounded w-full sm:w-48">
       <option value="">Все статусы</option>
       {% for s in statuses %}
