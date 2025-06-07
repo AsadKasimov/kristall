@@ -1,5 +1,10 @@
 from django import forms
+from datetime import datetime
+from openpyxl import Workbook
+from django.http import HttpResponse
+
 from django.utils import timezone
+from .models import Employee
 
 from .models import Order, Rug, Notification
 from .models import OrderStaff
@@ -18,6 +23,9 @@ from django.forms import formset_factory
 from .forms import RugForm
 from django.utils.timezone import now, localtime
 from django.utils.timezone import localdate
+from django.db.models import Q
+from datetime import datetime, timedelta, date
+from calendar import monthrange
 
 
 def client_dashboard(request, token):
@@ -171,12 +179,16 @@ def create_client_view(request):
     if request.method == 'POST':
         form = ClientCreateForm(request.POST)
         if form.is_valid():
+            phone = form.cleaned_data['phone']
+            existing = CustomUser.objects.filter(phone=phone, role='CLIENT').first()
+            if existing:
+                return redirect('edit_client', client_id=existing.id)
             client = form.save()
-            token, _ = AccessToken.objects.get_or_create(client=client)
             return redirect('create_order_with_client', client_id=client.id)
     else:
         form = ClientCreateForm()
     return render(request, 'orders/create_client.html', {'form': form})
+
 
 
 @login_required
@@ -409,3 +421,263 @@ def get_courier_load(request):
         }
 
     return JsonResponse(data)
+
+
+from accounts.models import CustomUser
+
+@login_required
+@only_operators
+def operator_employee_list(request):
+    employees = CustomUser.objects.filter(role__in=['OPERATOR', 'COURIER'])
+
+    return render(request, 'orders/employee_list.html', {'employees': employees})
+
+
+from accounts.models import CustomUser
+from .models import ShiftLog
+from django.utils import timezone
+
+@login_required
+@only_operators
+def operator_shift_log(request):
+    date_str = request.GET.get('date') or request.POST.get('date')
+    selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.now().date()
+
+    employees = CustomUser.objects.exclude(role='CLIENT')
+
+    if request.method == 'POST':
+        checked_ids = request.POST.getlist('worked')
+        ShiftLog.objects.filter(date=selected_date).exclude(user__id__in=checked_ids).delete()
+        for emp_id in checked_ids:
+            ShiftLog.objects.get_or_create(user_id=emp_id, date=selected_date)
+        return redirect(f'{request.path}?date={selected_date}')
+
+    shiftlogs = ShiftLog.objects.filter(date=selected_date).values_list('user_id', flat=True)
+    return render(request, 'orders/shift_log.html', {
+        'employees': employees,
+        'shiftlogs': shiftlogs,
+        'selected_date': selected_date,
+    })
+
+
+@login_required
+@only_operators
+def operator_shift_report(request):
+    from accounts.models import CustomUser
+    from orders.models import ShiftLog
+    import calendar
+
+    employees = CustomUser.objects.exclude(role='CLIENT')
+    employee_id = request.GET.get('employee')
+    month_str = request.GET.get('month', timezone.now().strftime('%Y-%m'))
+
+    selected_month = datetime.strptime(month_str, '%Y-%m').date()
+    selected_employee = None
+    shift_days = []
+
+    if employee_id:
+        selected_employee = CustomUser.objects.get(id=employee_id)
+        start_date = selected_month.replace(day=1)
+        end_day = monthrange(start_date.year, start_date.month)[1]
+        end_date = selected_month.replace(day=end_day)
+
+        logs = ShiftLog.objects.filter(user=employee_id, date__range=(start_date, end_date)).values_list('date', flat=True)
+        shift_days = [d.day for d in logs]
+
+    # Формируем список дней месяца
+    _, last_day = monthrange(selected_month.year, selected_month.month)
+    calendar_days = [
+        {'date': date(selected_month.year, selected_month.month, day), 'working': day in shift_days}
+        for day in range(1, last_day + 1)
+    ]
+
+    selected_month_verbose = f"{calendar.month_name[selected_month.month]} {selected_month.year}"
+
+    context = {
+        'employees': employees,
+        'selected_employee': selected_employee,
+        'selected_employee_id': int(employee_id) if employee_id else None,
+        'selected_month': month_str,
+        'selected_month_verbose': selected_month_verbose,
+        'calendar_days': calendar_days,
+    }
+    if request.GET.get("export") == "1" and selected_employee:
+        from openpyxl import Workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Смены"
+        ws.append(["Дата", "Сотрудник", "Роль", "Присутствие"])
+        for day in calendar_days:
+            ws.append([
+                day["date"].strftime("%Y-%m-%d"),
+                selected_employee.full_name or selected_employee.username,
+                selected_employee.get_role_display(),
+                "Да" if day["working"] else "Нет"
+            ])
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = f'attachment; filename=shift_report_{selected_month.strftime("%Y_%m")}.xlsx'
+        wb.save(response)
+        return response
+
+    return render(request, 'orders/shift_report.html', context)
+
+from django.http import HttpResponse
+from django.utils.dateparse import parse_date
+from openpyxl import Workbook
+from .models import Order
+from django.contrib.auth.decorators import login_required
+from accounts.models import CustomUser
+from django.shortcuts import render
+
+@login_required
+def export_orders_excel(request):
+    start_str = request.GET.get("start")
+    end_str = request.GET.get("end")
+    if not start_str or not end_str:
+        return render(request, "orders/export_orders.html")
+
+    start = parse_date(start_str)
+    end = parse_date(end_str)
+    if not start or not end:
+        return render(request, "orders/export_orders.html")
+
+    orders = Order.objects.filter(created_at__date__range=(start, end)).select_related("client")
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Orders"
+    ws.append(["ID", "Клиент", "Телефон", "Адрес", "Дата", "Статус", "Стоимость"])
+    for order in orders:
+        ws.append([
+            order.id,
+            order.client.full_name or order.client.username,
+            order.client.phone,
+            order.client.address,
+            order.created_at.strftime("%Y-%m-%d %H:%M"),
+            order.status,
+            order.total_price
+        ])
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="orders.xlsx"'
+    wb.save(response)
+    return response
+
+@login_required
+def export_orders_page(request):
+    return render(request, "orders/export_orders.html")
+
+
+# views.py (дополнительно)
+from django.contrib.auth.decorators import login_required
+from accounts.models import CustomUser
+from django.shortcuts import render, get_object_or_404, redirect
+from django.db.models import Q
+from django import forms
+from .models import Order
+from openpyxl import Workbook
+from django.http import HttpResponse
+from django.utils.dateparse import parse_date
+
+class ClientEditForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['full_name', 'phone', 'email', 'address']
+
+@login_required
+@only_operators
+def client_list_view(request):
+    query = request.GET.get("q", "")
+    clients = CustomUser.objects.filter(role="CLIENT")
+    if query:
+        clients = clients.filter(
+            Q(full_name__icontains=query) | Q(phone__icontains=query)
+        )
+    return render(request, "orders/client_list.html", {"clients": clients, "q": query})
+
+@login_required
+@only_operators
+def client_edit_view(request, client_id):
+    client = get_object_or_404(CustomUser, id=client_id, role="CLIENT")
+    if request.method == "POST":
+        form = ClientEditForm(request.POST, instance=client)
+        if form.is_valid():
+            form.save()
+            return redirect("client_list")
+    else:
+        form = ClientEditForm(instance=client)
+    return render(request, "orders/client_edit.html", {"form": form, "client": client})
+
+@login_required
+@only_operators
+def client_report_view(request):
+    client_id = request.GET.get("client")
+    start = parse_date(request.GET.get("start") or "1900-01-01")
+    end = parse_date(request.GET.get("end") or "2100-01-01")
+    client = get_object_or_404(CustomUser, id=client_id, role="CLIENT")
+    orders = Order.objects.filter(client=client, created_at__date__range=(start, end))
+
+    if request.GET.get("export") == "1":
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Client Orders"
+        ws.append(["ID", "Дата", "Статус", "Стоимость"])
+        for order in orders:
+            ws.append([order.id, order.created_at.strftime("%Y-%m-%d"), order.status, order.total_price])
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="client_{client.id}_orders.xlsx"'
+        wb.save(response)
+        return response
+
+    return render(request, "orders/client_report.html", {
+        "client": client,
+        "orders": orders,
+        "start": start,
+        "end": end
+    })
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from accounts.models import CustomUser
+from .forms import ClientCreateForm
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
+@only_operators
+def edit_client(request, client_id):
+    client = get_object_or_404(CustomUser, id=client_id, role='CLIENT')
+    if request.method == 'POST':
+        form = ClientCreateForm(request.POST, instance=client)
+        if form.is_valid():
+            form.save()
+            return redirect('client_list')
+    else:
+        form = ClientCreateForm(instance=client)
+
+    return render(request, 'orders/edit_client.html', {
+        'form': form,
+        'client': client
+    })
+
+
+from django.db.models import Count, Sum
+
+@login_required
+@only_operators
+def client_report_view(request, client_id):
+    client = get_object_or_404(CustomUser, id=client_id, role='CLIENT')
+    orders = Order.objects.filter(client=client).order_by('-created_at')
+
+    total_orders = orders.count()
+    total_paid = orders.aggregate(Sum('total_price'))['total_price__sum'] or 0
+
+    return render(request, 'orders/client_report.html', {
+        'client': client,
+        'orders': orders,
+        'total_orders': total_orders,
+        'total_paid': total_paid,
+    })

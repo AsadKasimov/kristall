@@ -8,6 +8,9 @@ class CustomUser(AbstractUser):
         ('OPERATOR', 'Оператор'),
         ('EVALUATOR', 'Оценщик'),
         ('COURIER', 'Курьер'),
+        ('CLEANING', 'Клининг-бригада'),
+        ('MARKETING', 'Маркетинг'),
+        ('STORAGE', 'Хранение'),
     ]
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)

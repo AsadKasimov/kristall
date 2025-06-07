@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+
 from accounts.models import CustomUser
 import uuid
 
@@ -130,3 +132,10 @@ class Courier(models.Model):
 
     def __str__(self):
         return f"{self.user.full_name or self.user.username}"
+
+class ShiftLog(models.Model):
+    user = models.ForeignKey('accounts.CustomUser', on_delete=models.CASCADE)
+    date = models.DateField(default=timezone.now)
+
+    class Meta:
+        unique_together = ('user', 'date')

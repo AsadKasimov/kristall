@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Отчёт о сменах | Кристалл</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+</head>
+<body class="bg-gray-50 text-gray-900 p-8">
+  <h1 class="text-3xl font-bold mb-6">📅 Отчёт по сменам</h1>
+
+  <form method="get" class="mb-6 flex flex-wrap gap-4 items-center">
+    <select name="employee" required class="border p-2 rounded w-full sm:w-64">
+      <option value="">Выберите сотрудника</option>
+      {% for emp in employees %}
+        <option value="{{ emp.id }}" {% if emp.id == selected_employee_id %}selected{% endif %}>
+          {{ emp.full_name|default:emp.username }} ({{ emp.get_role_display }})
+        </option>
+      {% endfor %}
+    </select>
+    <input type="month" name="month" required value="{{ selected_month }}" class="border p-2 rounded w-full sm:w-48">
+    <button class="bg-blue-600 text-white px-4 py-2 rounded">Показать</button>
+    {% if selected_employee and selected_month %}
+      <a href="?employee={{ selected_employee.id }}&month={{ selected_month }}&export=1" class="ml-2 bg-green-600 text-white px-4 py-2 rounded">📄 Скачать</a>
+    {% endif %}
+  </form>
+
+  {% if selected_employee %}
+    <div class="mb-4 text-lg font-semibold">🔹 {{ selected_employee.full_name|default:selected_employee.username }} - {{ selected_employee.get_role_display }} за {{ selected_month_verbose }}
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 text-center">
+      {% for day in calendar_days %}
+        <div class="p-3 rounded-lg shadow text-sm {{ day.working|yesno:'bg-green-100 text-green-900,bg-red-100 text-red-800' }}">
+          {{ day.date|date:"d.m" }}<br/>
+          {{ day.working|yesno:'✅,❌' }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="mt-10">
+    <a href="{% url 'operator_dashboard' %}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded shadow">
+      ← Назад в панель оператора
+    </a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Сотрудники | Кристалл</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-4xl mx-auto bg-white rounded shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">🧑‍🔧 Сотрудники</h1>
+    <table class="min-w-full border border-gray-300">
+      <thead>
+  <tr>
+    <th>Имя пользователя</th>
+    <th>ФИО</th>
+    <th>Роль</th>
+    <th>Email</th>
+    <th>Телефон</th>
+  </tr>
+</thead>
+<tbody>
+  {% for emp in employees %}
+  <tr>
+    <td>{{ emp.username }}</td>
+    <td>{{ emp.full_name }}</td>
+    <td>{{ emp.get_role_display }}</td>
+    <td>{{ emp.email }}</td>
+    <td>{{ emp.phone }}</td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="5">Нет сотрудников</td>
+  </tr>
+  {% endfor %}
+</tbody>
+
+    </table>
+  </div>
+</body>
+</html>

@@ -1,7 +1,8 @@
 from django.urls import path
 
 from . import views
-from .views import client_dashboard, operator_order_list, edit_order, operator_dashboard, client_search_view
+from .views import client_dashboard, operator_order_list, edit_order, operator_dashboard, client_search_view, \
+    operator_shift_report, export_orders_excel, export_orders_page
 from .views import order_success
 from .views import create_client_view, create_order_with_client
 from django.contrib.auth.views import LogoutView
@@ -32,6 +33,18 @@ urlpatterns = [
     path('courier/mark-delivered/<int:order_id>/', views.mark_delivered, name='mark_delivered'),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
     path("api/courier-load/", views.get_courier_load, name="courier_load"),
+    path('operator/employees/', views.operator_employee_list, name='operator_employee_list'),
+    path('operator/shift-log/', views.operator_shift_log, name='operator_shift_log'),
+    path('operator/shift-report/', operator_shift_report, name='operator_shift_report'),
+
+    path('operator/orders/export/', export_orders_page, name='export_orders_page'),
+    path('operator/orders/export/excel/', export_orders_excel, name='export_orders_excel'),
+    path('operator/clients/', views.client_list_view, name='client_list'),
+    path('operator/clients/edit/<int:client_id>/', views.edit_client, name='edit_client'),
+
+    path('operator/clients/<int:client_id>/report/', views.client_report_view, name='client_report'),
+
+
 ]
 
 

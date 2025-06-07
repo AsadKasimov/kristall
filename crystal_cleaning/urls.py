@@ -32,6 +32,6 @@ urlpatterns = [
     path('accounts/login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     path('operator/orders/create/', create_order, name='create_order'),
     path('api/client-search/', client_search_view, name='client_search'),
-
+    path('', include('orders.urls')),
     path("logout/", LogoutView.as_view(next_page="/"), name="logout"),
 ]

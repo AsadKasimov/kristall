@@ -7,27 +7,47 @@
 </head>
 <body class="bg-gray-100 p-8">
 
-  <div class="max-w-5xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">🎛 Панель оператора</h1>
+<div class="max-w-5xl mx-auto">
+  <h1 class="text-3xl font-bold mb-6">🎛 Панель оператора</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-      <a href="/operator/orders/" class="bg-white p-6 rounded shadow hover:ring-2 ring-blue-300 transition">
-        <h2 class="text-xl font-semibold">📋 Все заказы</h2>
-        <p class="text-gray-600">Просмотр, фильтрация, редактирование заказов</p>
-      </a>
+    <a href="/operator/orders/" class="bg-white p-6 rounded shadow hover:ring-2 ring-blue-300 transition">
+      <h2 class="text-xl font-semibold">📋 Все заказы</h2>
+      <p class="text-gray-600">Просмотр, фильтрация, редактирование заказов</p>
+    </a>
 
-      <a href="/operator/orders/create/" class="bg-white p-6 rounded shadow hover:ring-2 ring-blue-300 transition">
-        <h2 class="text-xl font-semibold">➕ Новый заказ</h2>
-        <p class="text-gray-600">Создание новой заявки</p>
-      </a>
+    <a href="/operator/orders/create/" class="bg-white p-6 rounded shadow hover:ring-2 ring-blue-300 transition">
+      <h2 class="text-xl font-semibold">➕ Новый заказ</h2>
+      <p class="text-gray-600">Создание новой заявки</p>
+    </a>
 
-      <a href="/operator/clients/create/" class="bg-white p-6 rounded shadow hover:ring-2 ring-green-300 transition">
-        <h2 class="text-xl font-semibold">👤 Новый клиент</h2>
-        <p class="text-gray-600">Создание аккаунта клиента</p>
-      </a>
+    <a href="/operator/clients/create/" class="bg-white p-6 rounded shadow hover:ring-2 ring-green-300 transition">
+      <h2 class="text-xl font-semibold">👤 Новый клиент</h2>
+      <p class="text-gray-600">Создание аккаунта клиента</p>
+    </a>
 
-    </div>
+    <a href="{% url 'operator_shift_log' %}" class="bg-white p-6 rounded shadow hover:ring-2 ring-yellow-300 transition">
+      <h2 class="text-xl font-semibold">🧑‍💼 Учёт смен</h2>
+      <p class="text-gray-600">Отметка сотрудников, кто вышел сегодня</p>
+    </a>
+
+    <a href="{% url 'operator_shift_report' %}" class="bg-white p-6 rounded shadow hover:ring-2 ring-purple-300 transition">
+      <h2 class="text-xl font-semibold">📊 Отчёт по сменам</h2>
+      <p class="text-gray-600">Помесячный просмотр и экспорт в Excel</p>
+    </a>
+    <a href="{% url 'export_orders_page' %}" class="bg-white p-6 rounded shadow hover:ring-2 ring-blue-300 transition">
+      <h2 class="text-xl font-semibold">📤 Экспорт заказов</h2>
+      <p class="text-gray-600">Скачать заказы в Excel</p>
+    </a>
+    <a href="/operator/clients/" class="bg-white p-6 rounded shadow hover:ring-2 ring-indigo-300 transition">
+      <h2 class="text-xl font-semibold">📋 Все клиенты</h2>
+      <p class="text-gray-600">Просмотр, редактирование и отчёты по клиентам</p>
+    </a>
+
+
+  </div>
+</div>
   </div>
 <div class="mt-12 text-center">
   <form method="post" action="{% url 'logout' %}">
