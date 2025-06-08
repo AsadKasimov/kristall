@@ -77,15 +77,17 @@ def create_order(request):
         'rug_forms': rug_forms,
         'emp_form': emp_form,
     })
-
+import uuid
 
 @login_required
 def order_success(request, order_id):
-    order = Order.objects.get(id=order_id)
-    token = AccessToken.objects.get(client=order.client)
+    order = get_object_or_404(Order, id=order_id)
+    token, created = AccessToken.objects.get_or_create(
+        client=order.client,
+        defaults={"token": uuid.uuid4()}
+    )
     url = request.build_absolute_uri(f"/d/{token.short_token}/")
-    return HttpResponse(f"✅ Заказ создан! Ссылка для клиента: <a href='{url}'>{url}</a>")
-
+    return render(request, "order_success.html", {"link": url})
 
 @login_required
 def operator_order_list(request):
@@ -681,3 +683,11 @@ def client_report_view(request, client_id):
         'total_orders': total_orders,
         'total_paid': total_paid,
     })
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.urls import path
+
+@login_required
+def operator_help_view(request):
+    return render(request, "orders/operator_help.html")

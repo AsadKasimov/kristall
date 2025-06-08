@@ -51,10 +51,14 @@ class ClientCreateForm(forms.ModelForm):
         return user
 
 
+from django import forms
+from orders.models import Order
+from accounts.models import CustomUser
 
 class OrderForm(forms.ModelForm):
     client_phone = forms.CharField(label="Телефон клиента")
     client_address = forms.CharField(label="Адрес клиента", required=False)
+
     delivery_date = forms.DateField(
         label="Дата доставки",
         required=False,
@@ -64,6 +68,7 @@ class OrderForm(forms.ModelForm):
             "class": "w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         })
     )
+
     courier = forms.ModelChoiceField(
         queryset=CustomUser.objects.filter(role='COURIER'),
         label="Курьер",
@@ -81,7 +86,10 @@ class OrderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500')
+            field.widget.attrs.setdefault(
+                'class',
+                'w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500'
+            )
 
 
 class RugForm(forms.ModelForm):

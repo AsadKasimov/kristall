@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Справка для оператора</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900 p-6">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">📄 Справка и шаблоны</h1>
+
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">❓ Частые вопросы</h2>
+      <details class="mb-4 border p-4 rounded shadow">
+        <summary class="font-semibold cursor-pointer">💬 Как подтвердить заказ?</summary>
+        <p class="mt-2">Перейдите в список заказов, выберите нужный и измените статус на «Подтверждён».</p>
+      </details>
+      <details class="mb-4 border p-4 rounded shadow">
+        <summary class="font-semibold cursor-pointer">🛠️ Как создать новую заявку?</summary>
+        <p class="mt-2">На главной панели нажмите «Новый заказ» и заполните форму.</p>
+      </details>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">🔹 Шаблоны сообщений</h2>
+      <div class="bg-white p-4 rounded shadow mb-3">
+        <p class="mb-2">Здравствуйте! Ваш заказ №{{order_id}} принят и будет выполнен в ближайшее время.</p>
+        <button onclick="navigator.clipboard.writeText(this.previousElementSibling.innerText)" class="text-sm text-blue-600 hover:underline">Скопировать</button>
+      </div>
+      <div class="bg-white p-4 rounded shadow mb-3">
+        <p class="mb-2">Ваш заказ доставлен. Спасибо, что выбрали нас!</p>
+        <button onclick="navigator.clipboard.writeText(this.previousElementSibling.innerText)" class="text-sm text-blue-600 hover:underline">Скопировать</button>
+      </div>
+    </section>
+
+    <a href="{% url 'operator_dashboard' %}" class="inline-block mt-4 text-blue-600 hover:underline">← Назад</a>
+  </div>
+</body>
+</html>

@@ -43,7 +43,7 @@ urlpatterns = [
     path('operator/clients/edit/<int:client_id>/', views.edit_client, name='edit_client'),
 
     path('operator/clients/<int:client_id>/report/', views.client_report_view, name='client_report'),
-
+    path('operator/help/', views.operator_help_view, name='operator_help')
 
 ]
 

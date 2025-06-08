@@ -27,6 +27,8 @@
               <div><strong>Клиент:</strong> {{ order.client.full_name }} — {{ order.client.phone }}</div>
               <div><strong>Адрес:</strong> {{ order.client.address }}</div>
               <div><strong>Создан:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</div>
+              <p><strong>Дата доставки:</strong> {{ order.delivery_date }}</p>
+
             </div>
             <form method="post" action="{% url 'mark_picked_up' order.id %}">
               {% csrf_token %}
